@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import tokenRoutes from "./routes/tokenRoutes.js";
+import upcomingTokenRoutes from "./routes/upcomingTokenRoutes.js";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/tokens", tokenRoutes);
+app.use("/api/upcoming-tokens", upcomingTokenRoutes);
 
 // MongoDB connection
 mongoose

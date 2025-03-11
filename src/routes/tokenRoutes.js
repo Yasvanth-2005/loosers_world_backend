@@ -5,6 +5,7 @@ import {
   getAllTokens,
   getUserTokens,
   toggleLike,
+  getTokenById,
 } from "../controllers/tokenController.js";
 import auth from "../middleware/auth.js";
 
@@ -34,6 +35,7 @@ const upload = multer({
 // Public routes
 router.get("/", getAllTokens);
 router.get("/user/:userId", getUserTokens);
+router.get("/token/:tokenId", getTokenById);
 
 // Protected routes
 router.post("/create", auth, upload.single("image"), createToken);

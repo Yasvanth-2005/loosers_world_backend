@@ -118,3 +118,22 @@ export const toggleLike = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Get token by tokenId
+export const getTokenById = async (req, res) => {
+  try {
+    const { tokenId } = req.params;
+    const token = await Token.findOne({ tokenId }).populate(
+      "creator",
+      "username profilePicture"
+    );
+
+    if (!token) {
+      return res.status(404).json({ error: "Token not found" });
+    }
+
+    res.json(token);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
