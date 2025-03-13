@@ -1,6 +1,5 @@
 import UpcomingToken from "../models/UpcomingToken.js";
 
-// Get all upcoming tokens
 export const getAllUpcomingTokens = async (req, res) => {
   try {
     const tokens = await UpcomingToken.find({ status: "upcoming" })
@@ -14,7 +13,6 @@ export const getAllUpcomingTokens = async (req, res) => {
   }
 };
 
-// Create upcoming token
 export const createUpcomingToken = async (req, res) => {
   try {
     const { name, description, image, launchDate, links, initialPrice } =
@@ -37,7 +35,6 @@ export const createUpcomingToken = async (req, res) => {
   }
 };
 
-// Update token status
 export const updateTokenStatus = async (req, res) => {
   try {
     const { tokenId } = req.params;
@@ -48,7 +45,6 @@ export const updateTokenStatus = async (req, res) => {
       return res.status(404).json({ error: "Token not found" });
     }
 
-    // Only creator can update status
     if (!token.creator.equals(req.user._id)) {
       return res.status(403).json({ error: "Not authorized" });
     }

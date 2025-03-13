@@ -11,7 +11,7 @@ cloudinary.config({
 
 export const createToken = async (req, res) => {
   try {
-    const { name, description, links, category, solAmount, marketCap, tags } =
+    const { name, description, links, category, solAmount, symbol, tags } =
       req.body;
     const imageFile = req.file;
 
@@ -46,8 +46,8 @@ export const createToken = async (req, res) => {
       tokenId,
       category,
       solAmount,
-      symbol: "Shigga",
-      marketCap,
+      symbol,
+      marketCap: 12000000000,
       tags: parsedTags || [],
     });
 
@@ -64,7 +64,6 @@ export const createToken = async (req, res) => {
   }
 };
 
-// Get all tokens
 export const getAllTokens = async (req, res) => {
   try {
     const tokens = await Token.find()
@@ -76,7 +75,6 @@ export const getAllTokens = async (req, res) => {
   }
 };
 
-// Get user tokens
 export const getUserTokens = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -89,7 +87,6 @@ export const getUserTokens = async (req, res) => {
   }
 };
 
-// Like/unlike token
 export const toggleLike = async (req, res) => {
   try {
     const { tokenId } = req.params;
@@ -119,7 +116,6 @@ export const toggleLike = async (req, res) => {
   }
 };
 
-// Get token by tokenId
 export const getTokenById = async (req, res) => {
   try {
     const { tokenId } = req.params;

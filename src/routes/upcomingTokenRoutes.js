@@ -8,7 +8,6 @@ import {
 
 const router = express.Router();
 
-// Public routes
 router.get("/", getAllUpcomingTokens);
 router.post("/create", auth, createUpcomingToken);
 router.patch("/:tokenId", auth, updateTokenStatus);
