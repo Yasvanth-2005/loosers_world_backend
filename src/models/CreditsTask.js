@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const creditsTaskSchema = new mongoose.Schema(
   {
@@ -46,4 +46,5 @@ const creditsTaskSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("CreditsTask", creditsTaskSchema);
+const CreditsTask = mongoose.model("CreditsTask", creditsTaskSchema);
+export default CreditsTask;

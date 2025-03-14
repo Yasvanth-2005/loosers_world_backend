@@ -1,9 +1,8 @@
-const CreditsTask = require("../models/CreditsTask");
-const User = require("../models/User");
-const { validateObjectId } = require("../utils/validation");
+import CreditsTask from "../models/CreditsTask.js";
+import User from "../models/User.js";
 
 // Get all tasks
-exports.getAllTasks = async (req, res) => {
+export const getAllTasks = async (req, res) => {
   try {
     const tasks = await CreditsTask.find({ isActive: true });
     res.status(200).json(tasks);
@@ -15,7 +14,7 @@ exports.getAllTasks = async (req, res) => {
 };
 
 // Get user's tasks with progress
-exports.getUserTasks = async (req, res) => {
+export const getUserTasks = async (req, res) => {
   try {
     const userId = req.user._id;
     const tasks = await CreditsTask.find({ isActive: true });
@@ -40,14 +39,10 @@ exports.getUserTasks = async (req, res) => {
 };
 
 // Update task progress
-exports.updateTaskProgress = async (req, res) => {
+export const updateTaskProgress = async (req, res) => {
   try {
     const { taskId } = req.params;
     const userId = req.user._id;
-
-    if (!validateObjectId(taskId)) {
-      return res.status(400).json({ message: "Invalid task ID" });
-    }
 
     const task = await CreditsTask.findById(taskId);
     if (!task) {
@@ -92,7 +87,7 @@ exports.updateTaskProgress = async (req, res) => {
 };
 
 // Reset daily tasks
-exports.resetDailyTasks = async (req, res) => {
+export const resetDailyTasks = async (req, res) => {
   try {
     const tasks = await CreditsTask.find({ type: "daily", isActive: true });
     const now = new Date();

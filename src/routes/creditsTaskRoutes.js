@@ -1,17 +1,18 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
-const { protect } = require("../middleware/authMiddleware");
-const {
+
+import auth from "../middleware/auth.js";
+import {
   getAllTasks,
   getUserTasks,
   updateTaskProgress,
   resetDailyTasks,
-} = require("../controllers/creditsTaskController");
+} from "../controllers/creditsTaskController.js";
 
 router.get("/", getAllTasks);
 
-router.get("/user", protect, getUserTasks);
-router.put("/:taskId/progress", protect, updateTaskProgress);
-router.post("/reset-daily", protect, resetDailyTasks);
+router.get("/user", auth, getUserTasks);
+router.put("/:taskId/progress", auth, updateTaskProgress);
+router.post("/reset-daily", auth, resetDailyTasks);
 
-module.exports = router;
+export default router;
