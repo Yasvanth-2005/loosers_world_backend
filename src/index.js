@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import userRoutes from "./routes/userRoutes.js";
 import tokenRoutes from "./routes/tokenRoutes.js";
 import upcomingTokenRoutes from "./routes/upcomingTokenRoutes.js";
+import creditsTaskRoutes from "./routes/creditsTaskRoutes.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use("/api/users", userRoutes);
 app.use("/api/tokens", tokenRoutes);
 app.use("/api/upcoming-tokens", upcomingTokenRoutes);
+app.use("/api/credits-tasks", creditsTaskRoutes);
 
 // MongoDB connection
 mongoose
