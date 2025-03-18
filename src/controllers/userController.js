@@ -241,3 +241,47 @@ export const searchUsers = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const verifySocialMedia = async (req, res) => {
+  try {
+    const { platform, profileUrl } = req.body;
+    const userId = req.user._id;
+
+    if (!["google", "x", "telegram"].includes(platform)) {
+      return res.status(400).json({ error: "Invalid platform" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!user.socialVerification) {
+      user.socialVerification = {
+        google: { isVerified: false, url: "" },
+        x: { isVerified: false, url: "" },
+        telegram: { isVerified: false, url: "" },
+      };
+    }
+
+    user.socialVerification[platform] = {
+      isVerified: true,
+      url: profileUrl,
+    };
+
+    user.isVerified =
+      user.socialVerification.x.isVerified &&
+      user.socialVerification.telegram.isVerified;
+
+    await user.save();
+
+    res.json({
+      message: `${platform} account verified successfully`,
+      socialVerification: user.socialVerification,
+      isVerified: user.isVerified,
+    });
+  } catch (error) {
+    console.error("Error verifying social media:", error);
+    res.status(500).json({ error: "Failed to verify social media account" });
+  }
+};

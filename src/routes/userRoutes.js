@@ -9,6 +9,7 @@ import {
   toggleLike,
   getUserTokens,
   searchUsers,
+  verifySocialMedia,
 } from "../controllers/userController.js";
 import auth from "../middleware/auth.js";
 
@@ -24,5 +25,6 @@ router.post("/follow/:userId", auth, followUser);
 router.post("/like/:userId", auth, toggleLike);
 router.patch("/profile", auth, updateProfile);
 router.get("/tokens/:userId", getUserTokens);
+router.post("/verify-social", auth, verifySocialMedia);
 
 export default router;
