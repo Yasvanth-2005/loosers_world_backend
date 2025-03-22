@@ -1,6 +1,68 @@
 import CreditsTask from "../models/CreditsTask.js";
 import User from "../models/User.js";
 
+// Add credit tasks
+export const addCreditTasks = async (req, res) => {
+  try {
+    const tasks = [
+      {
+        title: "Create Your First Token",
+        description: "Create and launch your first token on our platform",
+        credits: 50,
+        progress: "0/1",
+        type: "one-time",
+        isActive: true,
+      },
+      {
+        title: "Follow 10 Users",
+        description: "Connect with other users by following them",
+        credits: 30,
+        progress: "0/10",
+        type: "one-time",
+        isActive: true,
+      },
+      {
+        title: "Get 100 Followers",
+        description: "Build your community and get followers",
+        credits: 100,
+        progress: "0/100",
+        type: "one-time",
+        isActive: true,
+      },
+      {
+        title: "Daily Login",
+        description: "Login to the platform daily",
+        credits: 10,
+        progress: "0/1",
+        type: "daily",
+        isActive: true,
+      },
+      {
+        title: "Share Your Token",
+        description: "Share your token on social media",
+        credits: 20,
+        progress: "0/1",
+        type: "one-time",
+        isActive: true,
+      },
+    ];
+
+    // Delete existing tasks
+    // await CreditsTask.deleteMany({});
+
+    const createdTasks = await CreditsTask.insertMany(tasks);
+
+    res.status(201).json({
+      message: "Credit tasks added successfully",
+      tasks: createdTasks,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error adding credit tasks", error: error.message });
+  }
+};
+
 // Get all tasks
 export const getAllTasks = async (req, res) => {
   try {
@@ -16,19 +78,46 @@ export const getAllTasks = async (req, res) => {
 // Get user's tasks with progress
 export const getUserTasks = async (req, res) => {
   try {
-    const userId = req.user._id;
     const tasks = await CreditsTask.find({ isActive: true });
 
-    // Get user's task progress
-    const user = await User.findById(userId).select("taskProgress");
-    const userProgress = user.taskProgress || {};
+    // If user is not logged in, return tasks without progress
+    if (!req.user) {
+      const tasksWithoutProgress = tasks.map((task) => ({
+        ...task.toObject(),
+        progress: {
+          current: 0,
+          total: parseInt(task.progress.split("/")[1]) || 1,
+        },
+        status: "pending",
+      }));
+      return res.status(200).json(tasksWithoutProgress);
+    }
 
-    // Combine tasks with user's progress
-    const tasksWithProgress = tasks.map((task) => ({
-      ...task.toObject(),
-      progress: userProgress[task._id] || task.progress,
-      status: userProgress[task._id] === "1/1" ? "completed" : "pending",
-    }));
+    // For logged in users, get their progress
+    const userId = req.user._id;
+    const user = await User.findById(userId).select("taskProgress");
+    const userProgress = user.taskProgress || new Map();
+
+    const tasksWithProgress = tasks.map((task) => {
+      const taskId = task._id.toString();
+      const userTaskProgress = userProgress.get(taskId) || {
+        current: 0,
+        total: 1,
+      };
+      const [_, total] = task.progress.split("/").map(Number);
+
+      return {
+        ...task.toObject(),
+        progress: {
+          current: userTaskProgress.current,
+          total: userTaskProgress.total || total,
+        },
+        status:
+          userTaskProgress.current === userTaskProgress.total
+            ? "completed"
+            : "pending",
+      };
+    });
 
     res.status(200).json(tasksWithProgress);
   } catch (error) {

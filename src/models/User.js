@@ -63,6 +63,14 @@ const userSchema = new mongoose.Schema({
       ref: "Token",
     },
   ],
+  taskProgress: {
+    type: Map,
+    of: {
+      current: { type: Number, default: 0 },
+      total: { type: Number, default: 1 },
+    },
+    default: new Map(),
+  },
   profilePicture: {
     type: String,
     default: "",
