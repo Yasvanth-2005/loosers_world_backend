@@ -1,16 +1,28 @@
 import CreditsTask from "../models/CreditsTask.js";
 import User from "../models/User.js";
+import Token from "../models/Token.js";
 
 // Add credit tasks
 export const addCreditTasks = async (req, res) => {
   try {
     const tasks = [
       {
+        title: "Get Verified",
+        description:
+          "Get verified on the platform with x and telegram and get verified badge",
+        credits: 100,
+        progress: "0/1",
+        type: "one-time",
+        task: "get_verified",
+        isActive: true,
+      },
+      {
         title: "Create Your First Token",
         description: "Create and launch your first token on our platform",
         credits: 50,
         progress: "0/1",
         type: "one-time",
+        task: "create_token",
         isActive: true,
       },
       {
@@ -19,6 +31,7 @@ export const addCreditTasks = async (req, res) => {
         credits: 30,
         progress: "0/10",
         type: "one-time",
+        task: "follow_users",
         isActive: true,
       },
       {
@@ -43,12 +56,13 @@ export const addCreditTasks = async (req, res) => {
         credits: 20,
         progress: "0/1",
         type: "one-time",
+        task: "share_token",
         isActive: true,
       },
     ];
 
     // Delete existing tasks
-    // await CreditsTask.deleteMany({});
+    await CreditsTask.deleteMany({});
 
     const createdTasks = await CreditsTask.insertMany(tasks);
 
@@ -75,25 +89,9 @@ export const getAllTasks = async (req, res) => {
   }
 };
 
-// Get user's tasks with progress
 export const getUserTasks = async (req, res) => {
   try {
     const tasks = await CreditsTask.find({ isActive: true });
-
-    // If user is not logged in, return tasks without progress
-    if (!req.user) {
-      const tasksWithoutProgress = tasks.map((task) => ({
-        ...task.toObject(),
-        progress: {
-          current: 0,
-          total: parseInt(task.progress.split("/")[1]) || 1,
-        },
-        status: "pending",
-      }));
-      return res.status(200).json(tasksWithoutProgress);
-    }
-
-    // For logged in users, get their progress
     const userId = req.user._id;
     const user = await User.findById(userId).select("taskProgress");
     const userProgress = user.taskProgress || new Map();
@@ -102,7 +100,7 @@ export const getUserTasks = async (req, res) => {
       const taskId = task._id.toString();
       const userTaskProgress = userProgress.get(taskId) || {
         current: 0,
-        total: 1,
+        total: parseInt(task.progress.split("/")[1]),
       };
       const [_, total] = task.progress.split("/").map(Number);
 

@@ -32,6 +32,9 @@ const creditsTaskSchema = new mongoose.Schema(
       enum: ["daily", "weekly", "monthly", "one-time"],
       required: true,
     },
+    task: {
+      type: String,
+    },
     isActive: {
       type: Boolean,
       default: true,

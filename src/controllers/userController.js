@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { JWT_SECRET, JWT_EXPIRES_IN } from "../config/jwt.js";
+import CreditsTask from "../models/CreditsTask.js";
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, JWT_SECRET, {
@@ -104,6 +105,89 @@ export const followUser = async (req, res) => {
       });
     }
 
+    // Handle "Follow 10 Users" task for the follower
+    const followTask = await CreditsTask.findOne({
+      title: "Follow 10 Users",
+      type: "one-time",
+    });
+
+    if (followTask) {
+      const currentProgress = req.user.taskProgress.get(
+        `${followTask._id}`
+      ) || {
+        current: 0,
+        total: parseInt(followTask.progress.split("/")[1]),
+      };
+
+      let newCurrent = currentProgress.current;
+      if (isFollowing) {
+        newCurrent =
+          currentProgress.current < 10
+            ? currentProgress.current - 1
+            : currentProgress.current;
+      } else {
+        newCurrent =
+          currentProgress.current < 10
+            ? currentProgress.current + 1
+            : currentProgress.current;
+      }
+
+      const newProgress = {
+        current: Math.max(0, Math.min(newCurrent, currentProgress.total)),
+        total: currentProgress.total,
+      };
+
+      await User.findByIdAndUpdate(req.user._id, {
+        $set: { [`taskProgress.${followTask._id}`]: newProgress },
+      });
+
+      if (
+        newProgress.current === currentProgress.total &&
+        (!currentProgress.status || currentProgress.status !== "completed")
+      ) {
+        await User.findByIdAndUpdate(req.user._id, {
+          $inc: { credits: followTask.credits },
+          $set: { [`taskProgress.${followTask._id}.status`]: "completed" },
+        });
+      }
+    }
+
+    // Handle "Get 100 Followers" task for the user being followed
+    const followersTask = await CreditsTask.findOne({
+      title: "Get 100 Followers",
+      type: "one-time",
+    });
+
+    if (followersTask) {
+      const currentFollowersProgress = user.taskProgress.get(
+        `${followersTask._id}`
+      ) || {
+        current: 0,
+        total: 100,
+      };
+
+      if (currentFollowersProgress.current !== currentFollowersProgress.total) {
+        const followerCount = isFollowing
+          ? Math.max(0, currentFollowersProgress.current - 1)
+          : Math.min(100, currentFollowersProgress.current + 1);
+
+        const newFollowersProgress = {
+          current: followerCount,
+          total: currentFollowersProgress.total,
+        };
+
+        await User.findByIdAndUpdate(userId, {
+          $set: { [`taskProgress.${followersTask._id}`]: newFollowersProgress },
+        });
+
+        if (followerCount === 100 && currentFollowersProgress.current < 100) {
+          await User.findByIdAndUpdate(userId, {
+            $inc: { credits: followersTask.credits },
+          });
+        }
+      }
+    }
+
     const updatedUser = await User.findById(req.user._id)
       .populate("followers", "username profilePicture")
       .populate("following", "username profilePicture");
@@ -112,8 +196,6 @@ export const followUser = async (req, res) => {
       return res.status(500).json({ error: "Failed to fetch updated user" });
     }
 
-    console.log(updatedUser);
-    console.log(isFollowing);
     res.json({
       message: isFollowing ? "Unfollowed" : "Followed",
       user: updatedUser,
@@ -269,9 +351,29 @@ export const verifySocialMedia = async (req, res) => {
       url: profileUrl,
     };
 
+    const wasVerifiedBefore = user.isVerified;
     user.isVerified =
       user.socialVerification.x.isVerified &&
       user.socialVerification.telegram.isVerified;
+
+    if (!wasVerifiedBefore && user.isVerified) {
+      const verificationTask = await CreditsTask.findOne({
+        title: "Get Verified",
+        type: "one-time",
+      });
+
+      if (verificationTask) {
+        user.taskProgress.set(verificationTask._id, {
+          current: 1,
+          total: verificationTask.progress.split("/")[1],
+        });
+
+        user.credits += verificationTask.credits;
+
+        verificationTask.status = "completed";
+        await verificationTask.save();
+      }
+    }
 
     await user.save();
 
@@ -279,6 +381,7 @@ export const verifySocialMedia = async (req, res) => {
       message: `${platform} account verified successfully`,
       socialVerification: user.socialVerification,
       isVerified: user.isVerified,
+      credits: user.credits,
     });
   } catch (error) {
     console.error("Error verifying social media:", error);
