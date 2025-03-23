@@ -63,10 +63,7 @@ export const registerUser = async (req, res) => {
 
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id)
-      .populate("followers", "username profilePicture")
-      .populate("following", "username profilePicture")
-      .populate("tokens");
+    const user = await User.findById(req.user._id);
 
     res.json(user);
   } catch (error) {
@@ -239,6 +236,13 @@ export const getUserByUsername = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
+    const followers = await User.find({ _id: { $in: user.followers } }).select(
+      "username profilePicture"
+    );
+    const following = await User.find({ _id: { $in: user.following } }).select(
+      "username profilePicture"
+    );
+
     let isFollowing = false;
     let isLiked = false;
     if (req.user) {
@@ -248,6 +252,8 @@ export const getUserByUsername = async (req, res) => {
 
     res.json({
       user,
+      followers,
+      following,
       isFollowing,
       isLiked,
     });
@@ -293,6 +299,10 @@ export const getUserTokens = async (req, res) => {
     const user = await User.findById(userId).populate({
       path: "tokens",
       options: { sort: { createdAt: -1 } },
+      populate: {
+        path: "creator",
+        select: "username profilePicture",
+      },
     });
 
     if (!user) {
@@ -336,6 +346,17 @@ export const verifySocialMedia = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    const existingUser = await User.findOne({
+      [`socialVerification.${platform}.url`]: profileUrl,
+      _id: { $ne: userId },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: `This ${platform} profile is already verified by another user`,
+      });
     }
 
     if (!user.socialVerification) {
