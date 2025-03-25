@@ -102,7 +102,6 @@ export const followUser = async (req, res) => {
       });
     }
 
-    // Handle "Follow 10 Users" task for the follower
     const followTask = await CreditsTask.findOne({
       title: "Follow 10 Users",
       type: "one-time",
@@ -118,19 +117,20 @@ export const followUser = async (req, res) => {
 
       let newCurrent = currentProgress.current;
       if (isFollowing) {
-        newCurrent =
-          currentProgress.current < 10
-            ? currentProgress.current - 1
-            : currentProgress.current;
+        if (
+          currentProgress.current > 0 &&
+          currentProgress.current < currentProgress.total
+        ) {
+          newCurrent = currentProgress.current - 1;
+        }
       } else {
-        newCurrent =
-          currentProgress.current < 10
-            ? currentProgress.current + 1
-            : currentProgress.current;
+        if (currentProgress.current < currentProgress.total) {
+          newCurrent = currentProgress.current + 1;
+        }
       }
 
       const newProgress = {
-        current: Math.max(0, Math.min(newCurrent, currentProgress.total)),
+        current: newCurrent,
         total: currentProgress.total,
       };
 
@@ -140,16 +140,14 @@ export const followUser = async (req, res) => {
 
       if (
         newProgress.current === currentProgress.total &&
-        (!currentProgress.status || currentProgress.status !== "completed")
+        currentProgress.current < currentProgress.total
       ) {
         await User.findByIdAndUpdate(req.user._id, {
           $inc: { credits: followTask.credits },
-          $set: { [`taskProgress.${followTask._id}.status`]: "completed" },
         });
       }
     }
 
-    // Handle "Get 100 Followers" task for the user being followed
     const followersTask = await CreditsTask.findOne({
       title: "Get 100 Followers",
       type: "one-time",
@@ -384,15 +382,21 @@ export const verifySocialMedia = async (req, res) => {
       });
 
       if (verificationTask) {
-        user.taskProgress.set(verificationTask._id, {
-          current: 1,
-          total: verificationTask.progress.split("/")[1],
-        });
+        const currentProgress = user.taskProgress.get(
+          `${verificationTask._id}`
+        ) || {
+          current: 0,
+          total: parseInt(verificationTask.progress.split("/")[1]),
+        };
 
-        user.credits += verificationTask.credits;
+        if (currentProgress.current < currentProgress.total) {
+          user.taskProgress.set(verificationTask._id, {
+            current: 1,
+            total: currentProgress.total,
+          });
 
-        verificationTask.status = "completed";
-        await verificationTask.save();
+          user.credits += verificationTask.credits;
+        }
       }
     }
 
@@ -407,5 +411,27 @@ export const verifySocialMedia = async (req, res) => {
   } catch (error) {
     console.error("Error verifying social media:", error);
     res.status(500).json({ error: "Failed to verify social media account" });
+  }
+};
+
+export const editUsername = async (req, res) => {
+  try {
+    const userId = req.user?._id.toString();
+    const { username } = req.body;
+
+    if (!username) {
+      return res.status(400).json({ error: "Username is required" });
+    }
+
+    const user = await User.findByIdAndUpdate(userId, { username });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "Username updated successfully", username });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
